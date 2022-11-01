@@ -1,0 +1,37 @@
+{
+	"name": "pl_loadSTGtables",
+	"properties": {
+		"activities": [
+			{
+				"name": "df_ing_stg_DealData",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_ing_stg_DealData",
+						"type": "DataFlowReference",
+						"parameters": {
+							"p_processing_date": "'2022-04-20'",
+							"p_run_id": "0",
+							"p_file_name": "'2022-04-20_DealData.json'"
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"annotations": []
+	}
+}

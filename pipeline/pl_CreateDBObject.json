@@ -1,0 +1,67 @@
+{
+	"name": "pl_CreateDBObject",
+	"properties": {
+		"activities": [
+			{
+				"name": "Create Schema",
+				"type": "Script",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_Staging",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": "CREATE SCHEMA [STG]"
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			},
+			{
+				"name": "Create Table",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "Create Schema",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_Staging",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": "CREATE TABLE [STG].[ING_GDD_Deal](\n\t[Deal_Id] [nvarchar](200) NULL,\n\t[Deal_Version] [nvarchar](200) NULL,\n\t[Created_Date] [nvarchar](200) NULL,\n\t[Deal_Status] [nvarchar](200) NULL,\n\t[Completed_Date] [nvarchar](200) NULL,\n\t[Deal_Owner] [nvarchar](200) NULL,\n\t[Deal_Total] [nvarchar](200) NULL,\n\t[Deal_Total_EUR] [nvarchar](200) NULL,\n\t[Customer_Name] [nvarchar](200) NULL,\n\t[Opportunity_Name] [nvarchar](200) NULL,\n\t[Region] [nvarchar](200) NULL,\n\t[Offering] [nvarchar](200) NULL,\n\t[Contract_Start_Date] [nvarchar](200) NULL,\n\t[Term_Period] [nvarchar](200) NULL,\n\t[Last_Change_Timestamp] [nvarchar](200) NULL,\n\t[Is_Last] [smallint] NULL,\n\t[Ingestion_loading_date] [nvarchar](200) NULL,\n\t[STG_loading_date] [datetime] NULL,\n\t[RUN_ID] [bigint] NULL,\n\t[STG_checksum] [nvarchar](2000) NULL\n) ON [PRIMARY]"
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			}
+		],
+		"annotations": []
+	}
+}

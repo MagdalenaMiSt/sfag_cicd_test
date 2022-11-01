@@ -1,0 +1,10 @@
+{
+	"name": "ls_CommonKeyValue",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://it-dma-blob-connecTest.vault.azure.net/"
+		}
+	}
+}

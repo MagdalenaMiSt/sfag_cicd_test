@@ -1,0 +1,104 @@
+{
+	"name": "ds_STG_ING_GDD_Deal",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQL_Staging",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Deal_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Deal_Version",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Created_Date",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Deal_Status",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Completed_Date",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Deal_Owner",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Deal_Total",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Deal_Total_EUR",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Customer_Name",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Opportunity_Name",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Region",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Offering",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Contract_Start_Date",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Term_Period",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Last_Change_Timestamp",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Is_Last",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Ingestion_loading_date",
+				"type": "nvarchar"
+			},
+			{
+				"name": "STG_loading_date",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "RUN_ID",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "STG_checksum",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "STG",
+			"table": "ING_GDD_Deal"
+		}
+	}
+}

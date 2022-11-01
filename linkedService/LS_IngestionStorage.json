@@ -1,0 +1,21 @@
+{
+	"name": "LS_IngestionStorage",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_CommonKeyValue",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "KV-ConnectSTorage"
+			}
+		},
+		"connectVia": {
+			"referenceName": "integrationRuntimeTTL5",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

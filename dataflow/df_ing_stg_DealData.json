@@ -1,0 +1,38 @@
+{
+	"name": "df_ing_stg_DealData",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_ING_DealData",
+						"type": "DatasetReference"
+					},
+					"name": "DealData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_STG_ING_GDD_Deal",
+						"type": "DatasetReference"
+					},
+					"name": "sinkINGGDDDeal"
+				}
+			],
+			"transformations": [
+				{
+					"name": "FlattenMain"
+				},
+				{
+					"name": "SelectRequredFields"
+				},
+				{
+					"name": "CleanUpAndDerive"
+				}
+			],
+			"script": "parameters{\n\tp_processing_date as string ('2022-04-20'),\n\tp_run_id as integer (0),\n\tp_file_name as string ('2022-04-20_DealData.json')\n}\nsource(output(\n\t\tGDD_Deal_Data as (Deal_ID as string, Version_Nbr as string, Created_Date as string, Deal_Status as string, CompletedDate as string, Deal_Owner as string, Deal_Total as string, Deal_Total_EUR as string, Customer_Name as string, Opportunity_Name as string, Region as string, Offering as string, Term_Period as string, Contract_Start_Date as string, LastChangeTimestamp as string)[]\n\t),\n\tallowSchemaDrift: false,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\trowUrlColumn: 'sourceFile',\n\tdocumentForm: 'documentPerLine') ~> DealData\nDealData foldDown(unroll(GDD_Deal_Data),\n\tmapColumn(\n\t\tDeal_ID = GDD_Deal_Data.Deal_ID,\n\t\tVersion_Nbr = GDD_Deal_Data.Version_Nbr,\n\t\tCreated_Date = GDD_Deal_Data.Created_Date,\n\t\tDeal_Status = GDD_Deal_Data.Deal_Status,\n\t\tCompletedDate = GDD_Deal_Data.CompletedDate,\n\t\tDeal_Owner = GDD_Deal_Data.Deal_Owner,\n\t\tDeal_Total = GDD_Deal_Data.Deal_Total,\n\t\tDeal_Total_EUR = GDD_Deal_Data.Deal_Total_EUR,\n\t\tCustomer_Name = GDD_Deal_Data.Customer_Name,\n\t\tOpportunity_Name = GDD_Deal_Data.Opportunity_Name,\n\t\tRegion = GDD_Deal_Data.Region,\n\t\tOffering = GDD_Deal_Data.Offering,\n\t\tTerm_Period = GDD_Deal_Data.Term_Period,\n\t\tContract_Start_Date = GDD_Deal_Data.Contract_Start_Date,\n\t\tLastChangeTimestamp = GDD_Deal_Data.LastChangeTimestamp,\n\t\tsourceFile\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> FlattenMain\nCleanUpAndDerive select(mapColumn(\n\t\tDeal_ID,\n\t\tVersion_Nbr,\n\t\tCreated_Date,\n\t\tDeal_Status,\n\t\tCompletedDate,\n\t\tDeal_Owner,\n\t\tDeal_Total,\n\t\tDeal_Total_EUR,\n\t\tCustomer_Name,\n\t\tOpportunity_Name,\n\t\tRegion,\n\t\tOffering,\n\t\tTerm_Period,\n\t\tContract_Start_Date,\n\t\tLastChangeTimestamp,\n\t\tIngestion_loading_date,\n\t\tSTG_loading_date,\n\t\trun_id,\n\t\tSTG_checksum,\n\t\tis_Last\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequredFields\nFlattenMain derive(Ingestion_loading_date = toDate(substring(sourceFile, (instr(sourceFile, '_DealData.json')-10), 10)),\n\t\tSTG_loading_date = currentTimestamp(),\n\t\trun_id = $p_run_id,\n\t\tSTG_checksum = sha2(256, byNames(['Deal_ID','Version_Nbr','Created_Date','Deal_Status','CompletedDate','Deal_Owner','Deal_Total','Deal_Total_EUR','Customer_Name','Opportunity_Name','Region','Offering','Term_Period','Contract_Start_Date','LastChangeTimestamp'])),\n\t\tis_Last = 1) ~> CleanUpAndDerive\nSelectRequredFields sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tDeal_Id as string,\n\t\tDeal_Version as string,\n\t\tCreated_Date as string,\n\t\tDeal_Status as string,\n\t\tCompleted_Date as string,\n\t\tDeal_Owner as string,\n\t\tDeal_Total as string,\n\t\tDeal_Total_EUR as string,\n\t\tCustomer_Name as string,\n\t\tOpportunity_Name as string,\n\t\tRegion as string,\n\t\tOffering as string,\n\t\tContract_Start_Date as string,\n\t\tTerm_Period as string,\n\t\tLast_Change_Timestamp as string,\n\t\tIs_Last as integer,\n\t\tIngestion_loading_date as string,\n\t\tSTG_loading_date as timestamp,\n\t\tRUN_ID as long,\n\t\tSTG_checksum as string\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tpreSQLs:['TRUNCATE TABLE [STG].[ING_GDD_Deal];'],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tDeal_Id = Deal_ID,\n\t\tDeal_Version = Version_Nbr,\n\t\tCreated_Date,\n\t\tDeal_Status,\n\t\tCompleted_Date = CompletedDate,\n\t\tDeal_Owner,\n\t\tDeal_Total,\n\t\tDeal_Total_EUR,\n\t\tCustomer_Name,\n\t\tOpportunity_Name,\n\t\tRegion,\n\t\tOffering,\n\t\tContract_Start_Date,\n\t\tTerm_Period,\n\t\tLast_Change_Timestamp = LastChangeTimestamp,\n\t\tIs_Last = is_Last,\n\t\tIngestion_loading_date,\n\t\tSTG_loading_date,\n\t\tRUN_ID = run_id,\n\t\tSTG_checksum\n\t)) ~> sinkINGGDDDeal"
+		}
+	}
+}

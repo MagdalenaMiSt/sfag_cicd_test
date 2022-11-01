@@ -1,0 +1,41 @@
+{
+	"name": "pl_InitialLoad",
+	"properties": {
+		"activities": [
+			{
+				"name": "pl_CreateDBObject",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_CreateDBObject",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "pl_loadSTGtables",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "pl_CreateDBObject",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_loadSTGtables",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"annotations": []
+	}
+}
