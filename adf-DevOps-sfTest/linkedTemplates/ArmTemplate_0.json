@@ -1,0 +1,563 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adf-DevOps-sfTest"
+		},
+		"LS_SQL_Staging_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LS_SQL_Staging'"
+		},
+		"ls_CommonKeyValue_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://it-dma-blob-connecTest.vault.azure.net/"
+		},
+		"LS_IngestionStorage_properties_typeProperties_connectionString_secretName": {
+			"type": "string",
+			"defaultValue": "KV-ConnectSTorage"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_CommonKeyValue')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('ls_CommonKeyValue_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/integrationRuntimeTTL5')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 5,
+							"cleanup": false
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_IngestionStorage')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "ls_CommonKeyValue",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "[parameters('LS_IngestionStorage_properties_typeProperties_connectionString_secretName')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "integrationRuntimeTTL5",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/integrationRuntimeTTL5')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_CommonKeyValue')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_SQL_Staging')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('LS_SQL_Staging_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "integrationRuntimeTTL5",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/integrationRuntimeTTL5')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_CreateDBObject')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Create Schema",
+						"type": "Script",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"linkedServiceName": {
+							"referenceName": "LS_SQL_Staging",
+							"type": "LinkedServiceReference"
+						},
+						"typeProperties": {
+							"scripts": [
+								{
+									"type": "Query",
+									"text": "CREATE SCHEMA [STG]"
+								}
+							],
+							"scriptBlockExecutionTimeout": "02:00:00"
+						}
+					},
+					{
+						"name": "Create Table",
+						"type": "Script",
+						"dependsOn": [
+							{
+								"activity": "Create Schema",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"linkedServiceName": {
+							"referenceName": "LS_SQL_Staging",
+							"type": "LinkedServiceReference"
+						},
+						"typeProperties": {
+							"scripts": [
+								{
+									"type": "Query",
+									"text": "CREATE TABLE [STG].[ING_GDD_Deal](\n\t[Deal_Id] [nvarchar](200) NULL,\n\t[Deal_Version] [nvarchar](200) NULL,\n\t[Created_Date] [nvarchar](200) NULL,\n\t[Deal_Status] [nvarchar](200) NULL,\n\t[Completed_Date] [nvarchar](200) NULL,\n\t[Deal_Owner] [nvarchar](200) NULL,\n\t[Deal_Total] [nvarchar](200) NULL,\n\t[Deal_Total_EUR] [nvarchar](200) NULL,\n\t[Customer_Name] [nvarchar](200) NULL,\n\t[Opportunity_Name] [nvarchar](200) NULL,\n\t[Region] [nvarchar](200) NULL,\n\t[Offering] [nvarchar](200) NULL,\n\t[Contract_Start_Date] [nvarchar](200) NULL,\n\t[Term_Period] [nvarchar](200) NULL,\n\t[Last_Change_Timestamp] [nvarchar](200) NULL,\n\t[Is_Last] [smallint] NULL,\n\t[Ingestion_loading_date] [nvarchar](200) NULL,\n\t[STG_loading_date] [datetime] NULL,\n\t[RUN_ID] [bigint] NULL,\n\t[STG_checksum] [nvarchar](2000) NULL\n) ON [PRIMARY]"
+								}
+							],
+							"scriptBlockExecutionTimeout": "02:00:00"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_Staging')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_ING_DealData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_IngestionStorage",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "ING"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "2022-04-20_DealData.json",
+						"container": "ingfile"
+					}
+				},
+				"schema": {
+					"type": "object",
+					"properties": {
+						"GDD_Deal_Data": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"Deal_ID": {
+										"type": "string"
+									},
+									"Version_Nbr": {
+										"type": "string"
+									},
+									"Created_Date": {
+										"type": "string"
+									},
+									"Deal_Status": {
+										"type": "string"
+									},
+									"CompletedDate": {
+										"type": "null"
+									},
+									"Deal_Owner": {
+										"type": "string"
+									},
+									"Deal_Total": {
+										"type": "string"
+									},
+									"Deal_Total_EUR": {
+										"type": "string"
+									},
+									"Customer_Name": {
+										"type": "string"
+									},
+									"Opportunity_Name": {
+										"type": "string"
+									},
+									"Region": {
+										"type": "string"
+									},
+									"Offering": {
+										"type": "string"
+									},
+									"Term_Period": {
+										"type": "string"
+									},
+									"Contract_Start_Date": {
+										"type": "string"
+									},
+									"LastChangeTimestamp": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_IngestionStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_STG_ING_GDD_Deal')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_Staging",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "SQL"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "Deal_Id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Deal_Version",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Created_Date",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Deal_Status",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Completed_Date",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Deal_Owner",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Deal_Total",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Deal_Total_EUR",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Customer_Name",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Opportunity_Name",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Region",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Offering",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Contract_Start_Date",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Term_Period",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Last_Change_Timestamp",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Is_Last",
+						"type": "smallint",
+						"precision": 5
+					},
+					{
+						"name": "Ingestion_loading_date",
+						"type": "nvarchar"
+					},
+					{
+						"name": "STG_loading_date",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "RUN_ID",
+						"type": "bigint",
+						"precision": 19
+					},
+					{
+						"name": "STG_checksum",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "STG",
+					"table": "ING_GDD_Deal"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_Staging')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_ing_stg_DealData')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ds_ING_DealData",
+								"type": "DatasetReference"
+							},
+							"name": "DealData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ds_STG_ING_GDD_Deal",
+								"type": "DatasetReference"
+							},
+							"name": "sinkINGGDDDeal"
+						}
+					],
+					"transformations": [
+						{
+							"name": "FlattenMain"
+						},
+						{
+							"name": "SelectRequredFields"
+						},
+						{
+							"name": "CleanUpAndDerive"
+						}
+					],
+					"script": "parameters{\n\tp_processing_date as string ('2022-04-20'),\n\tp_run_id as integer (0),\n\tp_file_name as string ('2022-04-20_DealData.json')\n}\nsource(output(\n\t\tGDD_Deal_Data as (Deal_ID as string, Version_Nbr as string, Created_Date as string, Deal_Status as string, CompletedDate as string, Deal_Owner as string, Deal_Total as string, Deal_Total_EUR as string, Customer_Name as string, Opportunity_Name as string, Region as string, Offering as string, Term_Period as string, Contract_Start_Date as string, LastChangeTimestamp as string)[]\n\t),\n\tallowSchemaDrift: false,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\trowUrlColumn: 'sourceFile',\n\tdocumentForm: 'documentPerLine') ~> DealData\nDealData foldDown(unroll(GDD_Deal_Data),\n\tmapColumn(\n\t\tDeal_ID = GDD_Deal_Data.Deal_ID,\n\t\tVersion_Nbr = GDD_Deal_Data.Version_Nbr,\n\t\tCreated_Date = GDD_Deal_Data.Created_Date,\n\t\tDeal_Status = GDD_Deal_Data.Deal_Status,\n\t\tCompletedDate = GDD_Deal_Data.CompletedDate,\n\t\tDeal_Owner = GDD_Deal_Data.Deal_Owner,\n\t\tDeal_Total = GDD_Deal_Data.Deal_Total,\n\t\tDeal_Total_EUR = GDD_Deal_Data.Deal_Total_EUR,\n\t\tCustomer_Name = GDD_Deal_Data.Customer_Name,\n\t\tOpportunity_Name = GDD_Deal_Data.Opportunity_Name,\n\t\tRegion = GDD_Deal_Data.Region,\n\t\tOffering = GDD_Deal_Data.Offering,\n\t\tTerm_Period = GDD_Deal_Data.Term_Period,\n\t\tContract_Start_Date = GDD_Deal_Data.Contract_Start_Date,\n\t\tLastChangeTimestamp = GDD_Deal_Data.LastChangeTimestamp,\n\t\tsourceFile\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> FlattenMain\nCleanUpAndDerive select(mapColumn(\n\t\tDeal_ID,\n\t\tVersion_Nbr,\n\t\tCreated_Date,\n\t\tDeal_Status,\n\t\tCompletedDate,\n\t\tDeal_Owner,\n\t\tDeal_Total,\n\t\tDeal_Total_EUR,\n\t\tCustomer_Name,\n\t\tOpportunity_Name,\n\t\tRegion,\n\t\tOffering,\n\t\tTerm_Period,\n\t\tContract_Start_Date,\n\t\tLastChangeTimestamp,\n\t\tIngestion_loading_date,\n\t\tSTG_loading_date,\n\t\trun_id,\n\t\tSTG_checksum,\n\t\tis_Last\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequredFields\nFlattenMain derive(Ingestion_loading_date = toDate(substring(sourceFile, (instr(sourceFile, '_DealData.json')-10), 10)),\n\t\tSTG_loading_date = currentTimestamp(),\n\t\trun_id = $p_run_id,\n\t\tSTG_checksum = sha2(256, byNames(['Deal_ID','Version_Nbr','Created_Date','Deal_Status','CompletedDate','Deal_Owner','Deal_Total','Deal_Total_EUR','Customer_Name','Opportunity_Name','Region','Offering','Term_Period','Contract_Start_Date','LastChangeTimestamp'])),\n\t\tis_Last = 1) ~> CleanUpAndDerive\nSelectRequredFields sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tDeal_Id as string,\n\t\tDeal_Version as string,\n\t\tCreated_Date as string,\n\t\tDeal_Status as string,\n\t\tCompleted_Date as string,\n\t\tDeal_Owner as string,\n\t\tDeal_Total as string,\n\t\tDeal_Total_EUR as string,\n\t\tCustomer_Name as string,\n\t\tOpportunity_Name as string,\n\t\tRegion as string,\n\t\tOffering as string,\n\t\tContract_Start_Date as string,\n\t\tTerm_Period as string,\n\t\tLast_Change_Timestamp as string,\n\t\tIs_Last as integer,\n\t\tIngestion_loading_date as string,\n\t\tSTG_loading_date as timestamp,\n\t\tRUN_ID as long,\n\t\tSTG_checksum as string\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tpreSQLs:['TRUNCATE TABLE [STG].[ING_GDD_Deal];'],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tDeal_Id = Deal_ID,\n\t\tDeal_Version = Version_Nbr,\n\t\tCreated_Date,\n\t\tDeal_Status,\n\t\tCompleted_Date = CompletedDate,\n\t\tDeal_Owner,\n\t\tDeal_Total,\n\t\tDeal_Total_EUR,\n\t\tCustomer_Name,\n\t\tOpportunity_Name,\n\t\tRegion,\n\t\tOffering,\n\t\tContract_Start_Date,\n\t\tTerm_Period,\n\t\tLast_Change_Timestamp = LastChangeTimestamp,\n\t\tIs_Last = is_Last,\n\t\tIngestion_loading_date,\n\t\tSTG_loading_date,\n\t\tRUN_ID = run_id,\n\t\tSTG_checksum\n\t)) ~> sinkINGGDDDeal"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_ING_DealData')]",
+				"[concat(variables('factoryId'), '/datasets/ds_STG_ING_GDD_Deal')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_loadSTGtables')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "df_ing_stg_DealData",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "df_ing_stg_DealData",
+								"type": "DataFlowReference",
+								"parameters": {
+									"p_processing_date": "'2022-04-20'",
+									"p_run_id": "0",
+									"p_file_name": "'2022-04-20_DealData.json'"
+								},
+								"datasetParameters": {
+									"DealData": {},
+									"sinkINGGDDDeal": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/df_ing_stg_DealData')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_InitialLoad')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "pl_CreateDBObject",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_CreateDBObject",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "pl_loadSTGtables",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "pl_CreateDBObject",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_loadSTGtables",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_CreateDBObject')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_loadSTGtables')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_TestRun')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pl_InitialLoad",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 15,
+						"startTime": "2022-11-02T13:00:00Z",
+						"endTime": "2022-11-03T01:00:00Z",
+						"timeZone": "UTC",
+						"schedule": {
+							"minutes": [
+								1
+							],
+							"hours": [
+								13
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_InitialLoad')]"
+			]
+		}
+	]
+}
