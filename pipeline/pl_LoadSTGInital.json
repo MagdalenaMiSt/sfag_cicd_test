@@ -30,6 +30,59 @@
 						"type": "JsonReadSettings"
 					}
 				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Get Metadata Year",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get Metadata Year').output.childItems",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "df_ing_stg_DealData_Initial",
+							"type": "ExecuteDataFlow",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataflow": {
+									"referenceName": "df_ing_stg_DealData_Initial",
+									"type": "DataFlowReference",
+									"parameters": {
+										"p_year": {
+											"value": "'@{activity('Get Metadata Year').output.childItems}'",
+											"type": "Expression"
+										},
+										"p_File_name": "'/*/*.json'"
+									}
+								},
+								"integrationRuntime": {
+									"referenceName": "integrationRuntimeTTL5",
+									"type": "IntegrationRuntimeReference"
+								},
+								"traceLevel": "Fine"
+							}
+						}
+					]
+				}
 			}
 		],
 		"annotations": []
