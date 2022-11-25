@@ -53,7 +53,14 @@
 						{
 							"name": "df_ing_stg_DealData_Initial",
 							"type": "ExecuteDataFlow",
-							"dependsOn": [],
+							"dependsOn": [
+								{
+									"activity": "Set variable1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
 							"policy": {
 								"timeout": "0.12:00:00",
 								"retry": 0,
@@ -68,7 +75,7 @@
 									"type": "DataFlowReference",
 									"parameters": {
 										"p_year": {
-											"value": "'@{activity('Get Metadata Year').output.childItems}'",
+											"value": "'@{variables('v_year')}'",
 											"type": "Expression"
 										},
 										"p_File_name": "'/*/*.json'"
@@ -80,11 +87,29 @@
 								},
 								"traceLevel": "Fine"
 							}
+						},
+						{
+							"name": "Set variable1",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "v_year",
+								"value": {
+									"value": "@activity('Get Metadata Year').output.itemTypeactivity('Get Metadata Year').output.itemType",
+									"type": "Expression"
+								}
+							}
 						}
 					]
 				}
 			}
 		],
+		"variables": {
+			"v_year": {
+				"type": "String"
+			}
+		},
 		"annotations": []
 	}
 }
