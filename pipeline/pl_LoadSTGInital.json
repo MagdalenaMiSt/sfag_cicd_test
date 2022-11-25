@@ -51,6 +51,19 @@
 					"isSequential": true,
 					"activities": [
 						{
+							"name": "Set variable1",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "v_year",
+								"value": {
+									"value": "@item().Name",
+									"type": "Expression"
+								}
+							}
+						},
+						{
 							"name": "df_ing_stg_DealData_Initial",
 							"type": "ExecuteDataFlow",
 							"dependsOn": [
@@ -81,24 +94,11 @@
 										"p_File_name": "'/*/*.json'"
 									}
 								},
-								"integrationRuntime": {
-									"referenceName": "integrationRuntimeTTL5",
-									"type": "IntegrationRuntimeReference"
+								"compute": {
+									"coreCount": 8,
+									"computeType": "General"
 								},
 								"traceLevel": "Fine"
-							}
-						},
-						{
-							"name": "Set variable1",
-							"type": "SetVariable",
-							"dependsOn": [],
-							"userProperties": [],
-							"typeProperties": {
-								"variableName": "v_year",
-								"value": {
-									"value": "@activity('Get Metadata Year').output.itemTypeactivity('Get Metadata Year').output.itemType",
-									"type": "Expression"
-								}
 							}
 						}
 					]
