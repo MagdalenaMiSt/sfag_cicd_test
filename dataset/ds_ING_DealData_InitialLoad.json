@@ -1,0 +1,78 @@
+{
+	"name": "ds_ING_DealData_InitialLoad",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_IngestionStorage",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "ING"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": "ingfile"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"GDD_Deal_Data": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"Deal_ID": {
+								"type": "string"
+							},
+							"Version_Nbr": {
+								"type": "string"
+							},
+							"Created_Date": {
+								"type": "string"
+							},
+							"Deal_Status": {
+								"type": "string"
+							},
+							"CompletedDate": {
+								"type": "null"
+							},
+							"Deal_Owner": {
+								"type": "string"
+							},
+							"Deal_Total": {
+								"type": "string"
+							},
+							"Deal_Total_EUR": {
+								"type": "string"
+							},
+							"Customer_Name": {
+								"type": "string"
+							},
+							"Opportunity_Name": {
+								"type": "string"
+							},
+							"Region": {
+								"type": "string"
+							},
+							"Offering": {
+								"type": "string"
+							},
+							"Term_Period": {
+								"type": "string"
+							},
+							"Contract_Start_Date": {
+								"type": "string"
+							},
+							"LastChangeTimestamp": {
+								"type": "string"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
