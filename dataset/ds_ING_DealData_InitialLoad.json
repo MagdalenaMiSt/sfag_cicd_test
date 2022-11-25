@@ -5,6 +5,11 @@
 			"referenceName": "LS_IngestionStorage",
 			"type": "LinkedServiceReference"
 		},
+		"parameters": {
+			"p_year": {
+				"type": "string"
+			}
+		},
 		"folder": {
 			"name": "ING"
 		},
