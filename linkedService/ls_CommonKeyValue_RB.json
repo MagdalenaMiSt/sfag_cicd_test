@@ -1,0 +1,10 @@
+{
+	"name": "ls_CommonKeyValue_RB",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://kv-devops-test-rbca.vault.azure.net/"
+		}
+	}
+}
